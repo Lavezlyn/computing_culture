@@ -114,7 +114,7 @@ def analyze_network(G: nx.Graph) -> Dict:
 
 def main():
     # 设置输入输出路径
-    input_file = "./keyword/n007_keywords.json"
+    input_file = "./chapter_keyword/n007.json_chapter_keywords.json"
     output_html = "./keyword/n007_network.html"
     output_analysis = "./keyword/n007_network_analysis.json"
     

@@ -3,7 +3,7 @@ from transformers import BertTokenizer, BertModel
 import jieba
 import json
 from collections import defaultdict
-import pkuseg
+import hanlp
 import torch
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
@@ -35,8 +35,8 @@ def calculate_similarity_matrix(embeddings: List[np.ndarray]) -> np.ndarray:
     return cosine_similarity(embeddings)
 
 def extract_keywords_from_file(file_path: str, use_classical_chinese: bool = True) -> Dict:
-    # 使用古文BERT
-    model_name = "ethanyt/guwenbert-large"
+    # 使用能识别繁体的BERT
+    model_name = "Jihuai/bert-ancient-chinese"
     tokenizer = BertTokenizer.from_pretrained(model_name)
     model = BertModel.from_pretrained(model_name)
     kw_model = KeyBERT(model)
@@ -51,18 +51,22 @@ def extract_keywords_from_file(file_path: str, use_classical_chinese: bool = Tru
     
     # 分词处理
     if use_classical_chinese:
-        # 使用pkuseg进行古文分词
-        seg = pkuseg.pkuseg(postag=True)  # 启用词性标注
-        words_with_pos = seg.cut(combined_text)
+        # 使用HanLP进行古文分词
+        tokenizer_hanlp = hanlp.load(hanlp.pretrained.tok.COARSE_ELECTRA_SMALL_ZH)
+        tagger = hanlp.load(hanlp.pretrained.pos.CTB9_POS_ELECTRA_SMALL)
+        words = tokenizer_hanlp(combined_text)
+        pos_tags = tagger(words)
+        
         # 只保留名词、动词、形容词等实意词
-        valid_pos = {'n', 'v', 'a', 'i', 'j', 'l'}  # 名词、动词、形容词、成语、简称、习语
-        words = []
-        pos_tags = []
-        for word, pos in words_with_pos:
-            if pos[0] in valid_pos:
-                words.append(word)
-                pos_tags.append(pos)
-        words = ' '.join(words)
+        valid_pos = {'NN', 'VV', 'JJ', 'VA', 'NR', 'FW'}  # 名词、动词、形容词、专有名词等
+        filtered_words = []
+        filtered_pos = []
+        for word, pos in zip(words, pos_tags):
+            if pos in valid_pos:
+                filtered_words.append(word)
+                filtered_pos.append(pos)
+        words = ' '.join(filtered_words)
+        pos_tags = filtered_pos
     else:
         # 使用jieba进行现代文分词
         words = ' '.join(jieba.cut(combined_text))
@@ -96,10 +100,10 @@ def extract_keywords_from_file(file_path: str, use_classical_chinese: bool = Tru
         
         # 获取词性（如果可用）
         pos = None
-        if use_classical_chinese and keyword in words.split():
-            idx = words.split().index(keyword)
-            if idx < len(pos_tags):
-                pos = pos_tags[idx]
+        if use_classical_chinese and keyword in filtered_words:
+            idx = filtered_words.index(keyword)
+            if idx < len(filtered_pos):
+                pos = filtered_pos[idx]
         
         enhanced_keywords.append({
             "keyword": keyword,
@@ -125,6 +129,11 @@ def extract_keywords_from_file(file_path: str, use_classical_chinese: bool = Tru
             key=lambda x: x[1],
             reverse=True
         )[:5])
+    
+    # 在返回结果前移除embedding字段
+    for keyword_info in enhanced_keywords:
+        if "embedding" in keyword_info:
+            del keyword_info["embedding"]
     
     return {
         "keywords": enhanced_keywords,
