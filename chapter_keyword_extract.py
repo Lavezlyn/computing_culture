@@ -205,14 +205,15 @@ def process_chapter_keywords(file_path: str, use_classical_chinese: bool = True)
     return results
 
 if __name__ == "__main__":
-    file_dir = "./chinese/base"
+    file_dir = "./base"
     output_dir = "./chapter_keyword"
     os.makedirs(output_dir, exist_ok=True)
     
     # 获取所有json文件，保持原始顺序
     # all_files = [f for f in os.listdir(file_dir) if f.endswith(".json")]
-    # 只处理《论语》《孟子》《商君书》《孙子兵法》
-    all_files = ["n007.json", "n009.json", "n016.json", "n019.json"]
+    # 只处理《论语》《孟子》《商君书》《韩非子》
+    #all_files = ["n007.json", "n023.json", "n016.json", "n019.json"]
+    all_files = ["n017.json", "n018.json"]
     
     # 从第start_index个文件开始处理
     start_index = 0
