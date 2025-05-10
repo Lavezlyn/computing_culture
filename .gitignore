@@ -6,3 +6,7 @@ data/
 keyword/
 similarity_selected.json
 similarity.json
+base/
+target/
+keyword_analysis_results/
+fa_influence_ru_analysis/
